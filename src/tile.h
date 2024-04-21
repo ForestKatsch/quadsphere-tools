@@ -1,8 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
-#include "types.h"
+#include "vector.h"
 
 // Must always be 4 because a tile is always divided into two rows and two
 // columns in a quadtree.
@@ -23,3 +24,5 @@ struct Tile {
 };
 
 void tileSubdivide(Tile *tile, Tile children[4]);
+void tileFilename(char *into, size_t length, Tile *tile, char *prefix,
+                  char *suffix);

@@ -15,6 +15,7 @@ typedef struct ImageMetadata {
 
   /** Bytes needed to store this image in memory. */
   size_t byte_count;
+  size_t index_count;
 
   /** Optional filename this file was loaded from or will be written to. */
   char filename[IMAGE_FILENAME_CAPACITY];
@@ -40,3 +41,6 @@ void imagePrintMetadata(Image *img);
 
 // image_pnm.c
 void imageInitFromPnm(Image *img, char *filename);
+
+void imageWritePng(Image *img, char *filename);
+void imageWriteElevation(Image *elevation, Image *normal, char *filename);

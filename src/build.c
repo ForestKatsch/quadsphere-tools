@@ -7,6 +7,9 @@
 #include <stdlib.h>
 
 #include "mem.h"
+#include "progress.h"
+
+Progress p;
 
 static void buildStatsInit(BuildStats *stats, BuildOptions *options) {
   assert(stats != NULL);
@@ -14,42 +17,20 @@ static void buildStatsInit(BuildStats *stats, BuildOptions *options) {
   stats->completed_tile_count = 0;
   stats->total_tile_count = 0;
 
-  for (int level = 0; level <= options->max_level; level++) {
+  for (int level = 0;
+       level <= fmax(options->texture_max_level, options->vertex_max_level);
+       level++) {
     stats->total_tile_count += (uint64_t)1 << (level * 2);
   }
 
   stats->total_tile_count *= 6;
 }
 
-static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
 static void buildStatsPrintProgress(BuildStats *stats) {
   assert(stats != NULL);
   assert(stats->total_tile_count > 0);
 
-  float progress_fraction =
-      stats->completed_tile_count / (float)stats->total_tile_count;
-
-  pthread_mutex_lock(&lock);
-  printf("\33[2K\r");
-
-  printf("[");
-
-  int8_t percent = round(progress_fraction * 100);
-
-  for (int8_t i = 0; i < percent; i++) {
-    printf("=");
-  }
-
-  for (int8_t i = percent; i < 100; i++) {
-    printf(" ");
-  }
-
-  printf("] %'llu / %'llu", stats->completed_tile_count,
-         stats->total_tile_count);
-
-  fflush(stdout);
-  pthread_mutex_unlock(&lock);
+  progressReport(&p, stats->completed_tile_count);
 }
 
 void buildStatsIncrementTile(BuildStats *stats) {
@@ -58,16 +39,37 @@ void buildStatsIncrementTile(BuildStats *stats) {
 
   atomic_fetch_add(&stats->completed_tile_count, 1);
 
-  /** Print every 0.01% or if completed */
-  if (stats->completed_tile_count % (stats->total_tile_count / (100 * 100)) ==
-      0) {
+  if (stats->completed_tile_count % 2 == 0) {
     buildStatsPrintProgress(stats);
+  }
+}
+
+static void buildTile(BuildOptions *options, BuildStats *stats, Tile *tile) {
+  if (options->build_mode & BUILD_MODE_ALBEDO) {
+    buildAlbedoTile(options, stats, tile);
+  }
+
+  if (options->build_mode & (BUILD_MODE_HEIGHT | BUILD_MODE_NORMAL)) {
+    buildHeightTile(options, stats, tile);
+  }
+
+  buildStatsIncrementTile(stats);
+
+  if (tile->level <
+      fmax(options->texture_max_level, options->vertex_max_level)) {
+    Tile subtiles[TILE_CHILD_COUNT];
+    tileSubdivide(tile, subtiles);
+
+    for (int i = 0; i < TILE_CHILD_COUNT; i++) {
+      buildTile(options, stats, &subtiles[i]);
+    }
   }
 }
 
 static void buildFace(BuildOptions *options, BuildStats *stats, uint8_t face) {
   Tile tile = {.face = face, .level = 0, .pos = (Vec2){.x = 0, .y = 0}};
-  buildHeightTile(options, stats, &tile);
+
+  buildTile(options, stats, &tile);
 }
 
 typedef struct BuildThreadInfo BuildThreadInfo;
@@ -108,7 +110,12 @@ void build(BuildOptions options) {
   BuildStats stats;
   buildStatsInit(&stats, &options);
 
-  buildStatsPrintProgress(&stats);
+  fprintf(stderr,
+          "Building %llu tiles (texture to %d, vertex to %d, sample_count = "
+          "%d)...\n",
+          stats.total_tile_count, options.texture_max_level,
+          options.vertex_max_level, options.sample_count);
+  progressStart(&p, stats.total_tile_count);
 
   pthread_t threads[6];
 
@@ -121,8 +128,5 @@ void build(BuildOptions options) {
     pthread_join(threads[i], NULL);
   }
 
-  buildStatsPrintProgress(&stats);
-
-  // Close out progress
-  printf("\n");
+  progressEnd(&p, stats.completed_tile_count);
 }

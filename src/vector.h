@@ -24,7 +24,3 @@ typedef union Vec3 {
   };
   float data[3];
 } Vec3;
-
-/** Given an equirectangular coordinate, returns the fractional X/Y offset of
- * that pixel within size. */
-Vec2 equirectangularToCoord(LatLon ll, Vec2 size);

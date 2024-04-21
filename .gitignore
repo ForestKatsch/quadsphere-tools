@@ -2,3 +2,5 @@ qst
 *.o
 .vscode/
 qst.dSYM/
+data/
+.DS_Store

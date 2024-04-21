@@ -1,6 +1,7 @@
 #include "mem.h"
 
 #include <assert.h>
+#include <math.h>
 #include <pthread.h>
 #include <stdio.h>
 
@@ -13,6 +14,9 @@ static Allocation root = {
     .prev = &root,
     .next = &root,
 };
+
+static size_t bytes_allocated = 0;
+static size_t bytes_allocated_peak = 0;
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -71,6 +75,9 @@ void *_memAllocate(size_t bytes, char *filename, size_t line) {
   new->bytes = bytes;
 
   pthread_mutex_lock(&lock);
+  bytes_allocated += bytes;
+  bytes_allocated_peak = fmax(bytes_allocated, bytes_allocated_peak);
+
   insert(&root, new);
   pthread_mutex_unlock(&lock);
 
@@ -86,6 +93,7 @@ void _memFree(void *pointer, char *filename, size_t line) {
   void *real_pointer = ((uint8_t *)pointer - sizeof(Allocation));
   Allocation *a = (Allocation *)((uint8_t *)pointer - sizeof(Allocation));
   pthread_mutex_lock(&lock);
+  bytes_allocated -= a->bytes;
   unlink(a);
   pthread_mutex_unlock(&lock);
 
@@ -122,4 +130,7 @@ void memLog(void) {
 
     next = next->next;
   } while (next != start);
+
+  fprintf(stderr, "peak memory usage: %s\n",
+          formatBytes(bytes_allocated_peak).string);
 }

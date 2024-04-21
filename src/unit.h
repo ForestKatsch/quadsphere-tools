@@ -9,4 +9,5 @@ struct UnitResult {
   char string[UNIT_RESULT_CAPACITY];
 };
 
+UnitResult formatSeconds(double seconds);
 UnitResult formatBytes(size_t bytes);

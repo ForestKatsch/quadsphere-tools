@@ -1,7 +1,7 @@
 #include "tile.h"
 
 #include <assert.h>
-#include <stdlib.h>
+#include <stdio.h>
 
 void tileSubdivide(Tile *tile, Tile children[4]) {
   assert(tile != NULL);
@@ -15,4 +15,12 @@ void tileSubdivide(Tile *tile, Tile children[4]) {
           .pos = (Vec2){.x = tile->pos.x * 2 + x, .y = tile->pos.y * 2 + y}};
     }
   }
+}
+
+char *face_name[6] = {"Z+", "X+", "Y+", "Z-", "X-", "Y-"};
+
+void tileFilename(char *into, size_t length, Tile *tile, char *prefix,
+                  char *suffix) {
+  snprintf(into, length, "%s%s%d/%d-%d%s", prefix, face_name[tile->face],
+           tile->level, (int)tile->pos.x, (int)tile->pos.y, suffix);
 }
