@@ -1,17 +1,20 @@
 #include "mem.h"
 
 #include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 
 #include "unit.h"
 
-Allocation root = {
+static Allocation root = {
     .filename = NULL,
     .line = 0,
     .bytes = 0,
     .prev = &root,
     .next = &root,
 };
+
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void initAllocation(Allocation *allocation) {
   assert(allocation != NULL);
@@ -67,10 +70,14 @@ void *_memAllocate(size_t bytes, char *filename, size_t line) {
   new->line = line;
   new->bytes = bytes;
 
+  pthread_mutex_lock(&lock);
   insert(&root, new);
+  pthread_mutex_unlock(&lock);
 
+#if LOG_ALLOCATIONS
   fprintf(stderr, "+ %s from %s L%zu\n", formatBytes(bytes).string, filename,
           line);
+#endif
 
   return (uint8_t *)pointer + sizeof(Allocation);
 }
@@ -78,10 +85,14 @@ void *_memAllocate(size_t bytes, char *filename, size_t line) {
 void _memFree(void *pointer, char *filename, size_t line) {
   void *real_pointer = ((uint8_t *)pointer - sizeof(Allocation));
   Allocation *a = (Allocation *)((uint8_t *)pointer - sizeof(Allocation));
+  pthread_mutex_lock(&lock);
   unlink(a);
+  pthread_mutex_unlock(&lock);
 
+#if LOG_ALLOCATIONS
   fprintf(stderr, "- %s from %s L%zu\n", formatBytes(a->bytes).string,
           a->filename, a->line);
+#endif
 
   free(real_pointer);
 }
@@ -111,8 +122,4 @@ void memLog(void) {
 
     next = next->next;
   } while (next != start);
-
-  if (unfree_count == 0) {
-    fprintf(stderr, "no memory leaked\n");
-  }
 }

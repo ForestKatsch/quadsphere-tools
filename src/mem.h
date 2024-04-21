@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#define LOG_ALLOCATIONS (1)
+#define LOG_ALLOCATIONS (0)
 
 /** Allocates a number of bytes. Asserts if `malloc` returns `NULL`. */
 #define memAllocate(bytes) _memAllocate(bytes, __FILE__, __LINE__)

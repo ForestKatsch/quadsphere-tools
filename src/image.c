@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../extern/stb_image_write.h"
 #include "mem.h"
 #include "unit.h"
 
@@ -55,7 +57,8 @@ void imagePrintMetadata(Image *img) {
   assert(img != NULL);
   assert(img->meta.byte_count > 0);
 
-  printf("%s: %s (size: %d × %d, bpp: %d)\n", img->meta.filename,
+  printf("%s: %s (size: %d × %d, bpp: %d)\n",
+         img->meta.filename[0] == '\0' ? "(unnamed)" : img->meta.filename,
          formatBytes(img->meta.byte_count).string, img->meta.width,
          img->meta.height, img->meta.bytes_per_pixel * 8);
 }

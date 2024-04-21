@@ -14,9 +14,13 @@ static void readHeader(ImageMetadata *meta, FILE *f) {
 
   char format;
 
-  assert(fscanf(f, "P%c\n", &format) == 1);
-  assert(fscanf(f, "%d %d\n", &meta->width, &meta->height) == 2);
-  assert(fscanf(f, "%d\n", &max_value) == 1);
+  int items_scanned;
+  items_scanned = fscanf(f, "P%c\n", &format);
+  assert(items_scanned == 1);
+  items_scanned = fscanf(f, "%d %d\n", &meta->width, &meta->height);
+  assert(items_scanned == 2);
+  items_scanned = fscanf(f, "%d\n", &max_value);
+  assert(items_scanned == 1);
 
   meta->bytes_per_pixel = max_value > 255 ? 2 : 1;
 
@@ -35,8 +39,8 @@ static void readHeader(ImageMetadata *meta, FILE *f) {
       exit(1);
   }
 
-  meta->byte_count =
-      meta->width * meta->height * meta->bytes_per_pixel * meta->channel_count;
+  meta->byte_count = (size_t)meta->width * meta->height *
+                     meta->bytes_per_pixel * meta->channel_count;
 }
 
 void imageInitFromPnm(Image *img, char *filename) {
@@ -52,7 +56,8 @@ void imageInitFromPnm(Image *img, char *filename) {
   readHeader(&img->meta, f);
 
   img->data = memAllocate(img->meta.byte_count);
-  assert(fread(img->data, 1, img->meta.byte_count, f) == img->meta.byte_count);
+  size_t byte_read_count = fread(img->data, 1, img->meta.byte_count, f);
+  assert(byte_read_count == img->meta.byte_count);
 
   fclose(f);
 }
