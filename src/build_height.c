@@ -25,19 +25,18 @@ static void sampleHeight(BuildOptions *options, Tile *tile, Image *image) {
       Vec2 tile_pixel = {.x = x, .y = y};
       float result = 0;
 
+      Vec2 tile_fraction = {.x = tile_pixel.x / (image->meta.width - 1),
+                            .y = tile_pixel.y / (image->meta.height - 1)};
+
       for (int sample = 0; sample < sample_count; sample++) {
-        Vec2 sample_pixel = vec2PixelRandomOffset(tile_pixel);
-
-        Vec2 tile_fraction = {.x = sample_pixel.x / image->meta.width,
-                              .y = sample_pixel.y / image->meta.height};
-
         Vec2 sample_coords = tileOffsetToEquirectangularImageCoord(
-            tile, tile_fraction, &source_image->meta);
+            tile, tile_fraction, vec3CubeRandomOffset(tile, &image->meta),
+            &source_image->meta);
 
         result += sampleChannel16(source_image, sample_coords, 0);
       }
 
-      writeChannel16(image, tile_pixel, 0, result / sample_count);
+      writeChannel16(image, tile_pixel, 0, result / sample_count / 2);
     }
   }
 }
@@ -59,10 +58,10 @@ static void sampleNormal(BuildOptions *options, Tile *tile, Image *image) {
       float result[3] = {0, 0, 0};
 
       for (int sample = 0; sample < sample_count; sample++) {
-        Vec2 sample_pixel = vec2PixelRandomOffset(tile_pixel);
+        Vec3 sample_offset = vec3CubeRandomOffset(tile, &image->meta);
 
         for (int dir = 0; dir < 3; dir++) {
-          Vec2 dir_pixel = {.x = sample_pixel.x, .y = sample_pixel.y};
+          Vec2 dir_pixel = {.x = tile_pixel.x, .y = tile_pixel.y};
 
           if (dir == 1) {
             dir_pixel.y += 1;
@@ -70,13 +69,14 @@ static void sampleNormal(BuildOptions *options, Tile *tile, Image *image) {
             dir_pixel.x += 1;
           }
 
-          Vec2 tile_fraction = {.x = dir_pixel.x / image->meta.width,
-                                .y = dir_pixel.y / image->meta.height};
+          Vec2 tile_fraction = {.x = dir_pixel.x / (image->meta.width - 1),
+                                .y = dir_pixel.y / (image->meta.height - 1)};
 
           Vec2 sample_coords = tileOffsetToEquirectangularImageCoord(
-              tile, tile_fraction, &source_image->meta);
+              tile, tile_fraction, sample_offset, &source_image->meta);
 
-          result[dir] += sampleChannel16(source_image, sample_coords, 0);
+          result[dir] +=
+              sampleChannel16Bilinear(source_image, sample_coords, 0);
         }
       }
 
@@ -100,7 +100,7 @@ static void sampleNormal(BuildOptions *options, Tile *tile, Image *image) {
       vec3Scale(&right, result[2] * scale + 1);
 
       Vec3 normal =
-          vec3Cross(vec3Subtract(down, center), vec3Subtract(right, center));
+          vec3Cross(vec3Subtract(right, center), vec3Subtract(down, center));
 
       vec3Normalize(&normal);
 

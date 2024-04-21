@@ -26,17 +26,15 @@ static void sampleAlbedo(BuildOptions *options, Tile *tile, Image *image) {
       float result[3] = {0, 0, 0};
 
       for (int sample = 0; sample < sample_count; sample++) {
-        Vec2 sample_pixel = vec2PixelRandomOffset(tile_pixel);
-
-        Vec2 tile_fraction = {.x = sample_pixel.x / image->meta.width,
-                              .y = sample_pixel.y / image->meta.height};
+        Vec2 tile_fraction = {.x = tile_pixel.x / (image->meta.width - 1),
+                              .y = tile_pixel.y / (image->meta.height - 1)};
 
         Vec2 sample_coords = tileOffsetToEquirectangularImageCoord(
-            tile, tile_fraction, &source_image->meta);
+            tile, tile_fraction, vec3CubeRandomOffset(tile, &image->meta),
+            &source_image->meta);
 
         for (int channel = 0; channel < image->meta.channel_count; channel++) {
-          uint8_t val = sampleChannel8(source_image, sample_coords, channel);
-          result[channel] += val;
+          result[channel] += sampleChannel8Bilinear(source_image, sample_coords, channel);
         }
       }
 

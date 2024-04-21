@@ -50,15 +50,19 @@ void progressReport(Progress *p, size_t count) {
   double now = getTime();
   double elapsed = now - p->start;
 
-  if (p->display_estimated_time && elapsed > 5 &&
-      (percent > 5 || count > 100)) {
+  if (p->display_estimated_time && elapsed > 2 &&
+      (percent > 2 || count > 300)) {
     if ((now - p->time_last_printed) > 1) {
       p->remaining = (elapsed / progress_fraction) - elapsed;
       p->time_last_printed = now;
     }
 
-    fprintf(stderr, " (about %s remaining)",
-            formatSeconds(p->remaining).string);
+    if (progress_fraction == 1) {
+      fprintf(stderr, " complete in %s", formatSeconds(elapsed).string);
+    } else {
+      fprintf(stderr, " (about %s remaining)",
+              formatSeconds(p->remaining).string);
+    }
   }
 
   fflush(stderr);

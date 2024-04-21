@@ -34,7 +34,8 @@ Vec3 vec3Cross(Vec3 a, Vec3 b) {
                 .z = a.x * b.y - a.y * b.x};
 }
 
-Vec3 tileOffsetToSpherical(Tile *tile, Vec2 offset) {
+static Vec3 tileOffsetToSphericalRandom(Tile *tile, Vec2 offset,
+                                        Vec3 sample_offset_cube) {
   assert(offset.x >= -0.1 && offset.x <= 1.1);
   assert(offset.y >= -0.1 && offset.y <= 1.1);
 
@@ -55,6 +56,10 @@ Vec3 tileOffsetToSpherical(Tile *tile, Vec2 offset) {
   vec3Normalize(&result);
 
   return result;
+}
+
+Vec3 tileOffsetToSpherical(Tile *tile, Vec2 offset) {
+  return tileOffsetToSphericalRandom(tile, offset, (Vec3){.data = {0, 0, 0}});
 }
 
 /** Given spherical coordinates, returns a latitude from -90 to 90 and a
@@ -87,9 +92,11 @@ Vec2 sphericalToEquirectangularImageCoord(Vec3 spherical,
 }
 
 Vec2 tileOffsetToEquirectangularImageCoord(
-    Tile *tile, Vec2 tile_fraction, ImageMetadata *equirectangular_meta) {
+    Tile *tile, Vec2 tile_fraction, Vec3 sample_offset_cube,
+    ImageMetadata *equirectangular_meta) {
   return sphericalToEquirectangularImageCoord(
-      tileOffsetToSpherical(tile, tile_fraction), equirectangular_meta);
+      tileOffsetToSphericalRandom(tile, tile_fraction, sample_offset_cube),
+      equirectangular_meta);
 }
 
 float randomBetween(float min, float max) {
@@ -100,4 +107,14 @@ float box_radius = 0.5;
 Vec2 vec2PixelRandomOffset(Vec2 in) {
   return (Vec2){.x = in.x + randomBetween(-box_radius, box_radius),
                 .y = in.y + randomBetween(-box_radius, box_radius)};
+}
+
+Vec3 vec3CubeRandomOffset(Tile *tile, ImageMetadata *meta) {
+  float radius = (1 / (1 << tile->level)) / meta->width;
+
+  return (Vec3){
+      .x = randomBetween(-radius, radius),
+      .y = randomBetween(-radius, radius),
+      .z = randomBetween(-radius, radius),
+  };
 }

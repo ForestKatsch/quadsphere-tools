@@ -106,8 +106,11 @@ void imageWriteElevation(Image *elevation, Image *normal, char *filename) {
     abort();
   }
 
-  fprintf(f, "{\"size\":[%d,%d],\"e\":[", elevation->meta.width,
-          elevation->meta.height);
+  // only outputting a single number for the JSON 's' field. want to make sure
+  // it's never wrong.
+  assert(elevation->meta.width == elevation->meta.height);
+
+  fprintf(f, "{\"s\":%d,\"d\":[", elevation->meta.width);
 
   imageWriteJsonElements(elevation, f);
 

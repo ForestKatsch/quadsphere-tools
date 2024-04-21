@@ -92,7 +92,7 @@ void imageInitFromPnm(Image *img, char *filename) {
 
   // If we need to byte-swap the image after load, we arbitrarily say loading is
   // 80% of the total time and byte swapping is 20% of the total time.
-  float read_fraction = img->meta.byte_count == 2 ? 0.8 : 1;
+  float read_fraction = img->meta.bytes_per_pixel == 2 ? 0.8 : 1;
 
   while (byte_read_count < img->meta.byte_count) {
     byte_read_count +=
@@ -112,15 +112,14 @@ void imageInitFromPnm(Image *img, char *filename) {
       img->data8[i + 1] = temp;
 
       if (i % CHUNK_SIZE == 0) {
-        progressReport(&p, (read_fraction +
-                            (i / img->meta.byte_count * (1 - read_fraction))) *
+        progressReport(&p, (read_fraction + (i / (float)img->meta.byte_count *
+                                             (1 - read_fraction))) *
                                1000);
       }
     }
   }
 
-  progressEnd(&p, ceil(byte_read_count / (float)img->meta.byte_count *
-                       read_fraction * 1000));
+  progressEnd(&p, 1000);
 
   assert(byte_read_count == img->meta.byte_count);
 

@@ -27,13 +27,8 @@ UnitResult formatSeconds(double seconds) {
 
   seconds -= minutes * 60;
 
-  if (hours > 0 || minutes > 0) {
-    offset += snprintf(result.string + offset, UNIT_RESULT_CAPACITY - offset,
-                       "%02ds", (int)seconds);
-  } else {
-    offset += snprintf(result.string + offset, UNIT_RESULT_CAPACITY - offset,
-                       "%02.2fs", seconds);
-  }
+  offset += snprintf(result.string + offset, UNIT_RESULT_CAPACITY - offset,
+                     "%ds", (int)seconds);
 
   return result;
 }

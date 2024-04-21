@@ -38,16 +38,15 @@ void buildHeight() {
   Image height = getHeightmap();
 
   uint32_t texture_resolution = 512;
-  uint32_t vertex_resolution = 32;
+  uint32_t vertex_resolution = 64;
 
   build((BuildOptions){
       .texture_max_level =
           ceil(log2(albedo.meta.width / texture_resolution / 4)),
-      .vertex_max_level =
-          floor(log2(height.meta.width / vertex_resolution / 4)),
+      .vertex_max_level = ceil(log2(height.meta.width / vertex_resolution / 4)),
       .texture_resolution = texture_resolution,
       .vertex_resolution = vertex_resolution,
-      .sample_count = 48,
+      .sample_count = 32,
       .build_mode = BUILD_MODE_ALBEDO | BUILD_MODE_HEIGHT | BUILD_MODE_NORMAL,
       .height_image = &height,
       .albedo_image = &albedo,
